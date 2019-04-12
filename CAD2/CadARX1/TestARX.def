@@ -1,4 +1,0 @@
-LIBRARY	TestARX.arx
-EXPORTS acrxEntryPoint     PRIVATE
-        acrxGetApiVersion  PRIVATE
-
