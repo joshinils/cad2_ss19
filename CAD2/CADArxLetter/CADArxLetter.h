@@ -18,8 +18,8 @@ public:
     CADArxLetter(void);
     virtual ~CADArxLetter(void);
 
-    bool DataInput(void);
-    void Create(void);
+	bool DataInput(void);
+	void Create(void);
 
 private:
     ads_real    _rWidth;

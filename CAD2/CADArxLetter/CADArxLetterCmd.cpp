@@ -5,10 +5,12 @@
 
 #include "CADArxLetter.h"
 
-void CADArxLetterCmd() 
-{ 
+void CADArxLetterCmd()
+{
     CADArxLetter letter;
-    if ( letter.DataInput() )
+    if (letter.DataInput())
+    {
         letter.Create();
+    }
 }
 
