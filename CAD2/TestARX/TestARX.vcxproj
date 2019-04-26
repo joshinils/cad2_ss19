@@ -108,7 +108,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalLibraryDirectories>.\..\arx2015\lib-x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>accore.lib;ac1st20.lib;rxapi.lib;acdb20.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>accore.lib;ac1st20.lib;rxapi.lib;acdb20.lib;acge20.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>TestARX.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
@@ -142,11 +142,11 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>.\..\arx2015\lib-x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>accore.lib;ac1st20.lib;rxapi.lib;acdb20.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>accore.lib;ac1st20.lib;rxapi.lib;acdb20.lib;acge20.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>.\TestARX.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
