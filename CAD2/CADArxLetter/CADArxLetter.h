@@ -9,6 +9,7 @@
 
 #include <adsdef.h>
 #include <gepnt3d.h>
+
 class AcGePoint2d;
 class AcDbBlockTableRecord;
 

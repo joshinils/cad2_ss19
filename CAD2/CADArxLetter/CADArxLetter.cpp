@@ -27,6 +27,9 @@
 #include <stdio.h>
 #include <tchar.h>
 
+#include <dbsymtb.h>
+
+
 
 // Zum Testen ist das "Epsilon" relativ groß gewählt.
 #define CADArx_Length_Eps  0.001
@@ -85,5 +88,14 @@ void CADArxLetter::Create(void)
 
     // Fügen Sie hier den Code zur Berechnung Speicherung
 	// der AcDbLine- bzw. AcDbArc-Elemente ein.
+
+    AcGePoint3d lu = _ptRef;
+    lu.y += _rHeight;
+
+    // lower left to upper left
+    AcDbLine foo(_ptRef, lu);
+
+    AcDbBlockTableRecord r;
+    r.appendAcDbEntity(&foo);
 }
 

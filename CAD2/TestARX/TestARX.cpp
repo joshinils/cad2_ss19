@@ -16,9 +16,14 @@
 #include <rxregsvc.h>
 #include "tchar.h"
 
+// test point3d
+#include <gepnt3d.h>
+
+
 void TestARXCmd()
 {
     acutPrintf(_T("\nTestARX command!"));
+    AcGePoint3d p(0.0f, 0.0f, 0.0f);
 }
 
 void InitApp()

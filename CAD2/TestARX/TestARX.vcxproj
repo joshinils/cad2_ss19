@@ -106,10 +106,10 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalLibraryDirectories>.\..\arx2015\lib-x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>accore.lib;ac1st20.lib;rxapi.lib;acdb20.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>.\TestARX.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>TestARX.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
