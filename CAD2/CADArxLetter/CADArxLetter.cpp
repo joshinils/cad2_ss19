@@ -28,7 +28,7 @@
 #include <tchar.h>
 
 #include <dbsymtb.h>
-
+#include <string>
 
 
 // Zum Testen ist das "Epsilon" relativ groß gewählt.
@@ -79,6 +79,43 @@ bool CADArxLetter::DataInput(void)
     return _bInitialized;
 }
 
+// from https://stackoverflow.com/questions/10737644/convert-const-char-to-wstring
+std::wstring s2ws(const std::string& str)
+{
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+    std::wstring wstrTo(size_needed, 0);
+    MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+    return wstrTo;
+}
+
+//prints std::string converted to wstring in autocad
+void printMessage(std::string const& s)
+{
+    acutPrintf(s2ws(s).c_str());
+}
+
+// do all the stuff at once
+// ignores AcDbObjectId pOutputId
+Acad::ErrorStatus appendAcDbEntityAtOnce(AcDbEntity* pEntity)
+{
+    AcDbBlockTable* pBlockTable;
+    acdbHostApplicationServices()->workingDatabase()->getSymbolTable(pBlockTable, AcDb::kForRead);
+
+    AcDbBlockTableRecord* pBlockTableRecord;
+    pBlockTable->getAt(ACDB_MODEL_SPACE, pBlockTableRecord, AcDb::kForWrite);
+
+    // Nun können die einzelnen Entities hinzugefügt werden.
+    AcDbObjectId pOutputId; // to give as reference
+    Acad::ErrorStatus es = pBlockTableRecord->appendAcDbEntity(pOutputId, pEntity);
+
+    pEntity->close();
+    pBlockTableRecord->close();
+    pBlockTable->close();
+
+    return es;
+}
+
+
 void CADArxLetter::Create(void)
 {
     if (!_bInitialized)
@@ -89,13 +126,89 @@ void CADArxLetter::Create(void)
     // Fügen Sie hier den Code zur Berechnung Speicherung
 	// der AcDbLine- bzw. AcDbArc-Elemente ein.
 
-    AcGePoint3d lu = _ptRef;
+    //left lower is _ptRef
+
+    // left upper
+    AcGePoint3d lu(_ptRef);
     lu.y += _rHeight;
 
-    // lower left to upper left
-    AcDbLine foo(_ptRef, lu);
+    // right upper
+    AcGePoint3d ru(lu);
+    ru.x += _rWidth;
 
-    AcDbBlockTableRecord r;
-    r.appendAcDbEntity(&foo);
+    // right lower
+    AcGePoint3d rl(_ptRef);
+    rl.x += _rWidth;
+
+    std::string msg;
+    msg += "\n";
+    msg += __FUNCTION__;
+    msg += " _ptRef: " + std::to_string(_ptRef.x) + " " + std::to_string(_ptRef.y) + " " + std::to_string(_ptRef.z);
+    msg += "     lu: " + std::to_string(lu.x) + " " + std::to_string(lu.y) + " " + std::to_string(lu.z);
+
+    printMessage(msg);
+
+    // define bounding rectangle
+    appendAcDbEntityAtOnce(new AcDbLine(_ptRef, lu));
+    appendAcDbEntityAtOnce(new AcDbLine(lu, ru));
+    appendAcDbEntityAtOnce(new AcDbLine(ru, rl));
+    appendAcDbEntityAtOnce(new AcDbLine(rl, _ptRef));
+
+    double w10 = _rWidth  / 10;
+    double h10 = _rHeight / 10;
+
+    AcGePoint3d jlu(lu);
+    jlu.x += w10;
+    jlu.y -= h10;
+
+    AcGePoint3d jru(ru);
+    jru.x -= w10;
+    jru.y -= h10;
+
+    // upper horizontal stroke
+    appendAcDbEntityAtOnce(new AcDbLine(jlu, jru));
+
+    AcGePoint3d jll(jlu);
+    jll.y -= _rDist;
+
+    AcGePoint3d jrl(jru);
+    jrl.y -= _rDist;
+    jrl.x -= _rDist;
+
+    // lower horizontal stroke
+    appendAcDbEntityAtOnce(new AcDbLine(jll, jrl));
+    // cap of upper part on the left
+    appendAcDbEntityAtOnce(new AcDbLine(jlu, jll));
+
+    AcGePoint3d center(_ptRef);
+    center.x += _rWidth / 2;
+    double radius = _rWidth / 2 - w10 - _rDist;
+    center.y += radius + h10;
+
+    // inner arc
+    appendAcDbEntityAtOnce(new AcDbArc(center, radius         , 0, _rPi));
+    // outer arc
+    appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, 0, _rPi));
+
+    AcGePoint3d capl(center);
+    capl.x -= radius + _rDist;
+
+    AcGePoint3d capr(center);
+    capr.x -= radius;
+
+    // cap of arcs at the left
+    appendAcDbEntityAtOnce(new AcDbLine(capl, capr));
+
+    capr.x += radius * 2 + _rDist;
+    capl.x += radius * 2 + _rDist;
+
+    // vertical stroke inner
+    appendAcDbEntityAtOnce(new AcDbLine(capl, jrl));
+    // vertical stroke outer
+    appendAcDbEntityAtOnce(new AcDbLine(capr, jru));
+
+
+
+
 }
 

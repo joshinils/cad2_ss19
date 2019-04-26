@@ -152,6 +152,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="TestARX.cpp" />
+    <ClCompile Include="TestFigureCmd.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="TestARX.def" />
