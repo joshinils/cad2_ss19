@@ -186,9 +186,9 @@ void CADArxLetter::Create(void)
     center.y += radius + h10;
 
     // inner arc
-    appendAcDbEntityAtOnce(new AcDbArc(center, radius         , 0, _rPi));
+    appendAcDbEntityAtOnce(new AcDbArc(center, radius         , _rPi, 0)); // order of arc-angle parameter matters!
     // outer arc
-    appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, 0, _rPi));
+    appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, _rPi, 0));
 
     AcGePoint3d capl(center);
     capl.x -= radius + _rDist;
