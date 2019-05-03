@@ -185,30 +185,91 @@ void CADArxLetter::Create(void)
     double radius = _rWidth / 2 - w10 - _rDist;
     center.y += radius + h10;
 
-    // inner arc
-    appendAcDbEntityAtOnce(new AcDbArc(center, radius         , 0, _rPi));
-    // outer arc
-    appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, 0, _rPi));
+    // is the letter tall enough for only one center point?
+    if (center.y >= _rHeight / 3)
+    {
+        // draw two quarter circles in each corner, connected at the bottom
 
-    AcGePoint3d capl(center);
-    capl.x -= radius + _rDist;
+        // draw left corner first
+        // outer circle quadrant first
+        center.y = _rHeight / 3;
+        double radiusY = center.y - h10;
 
-    AcGePoint3d capr(center);
-    capr.x -= radius;
+        center.x = center.y;
+        double radiusX = center.x - w10;
 
-    // cap of arcs at the left
-    appendAcDbEntityAtOnce(new AcDbLine(capl, capr));
+        radius = min(radiusX, radiusY);
 
-    capr.x += radius * 2 + _rDist;
-    capl.x += radius * 2 + _rDist;
+        // inner arc
+        appendAcDbEntityAtOnce(new AcDbArc(center, radius, _rPi, _rPi/2));
+        // outer arc
+        appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, _rPi, _rPi / 2));
 
-    // vertical stroke inner
-    appendAcDbEntityAtOnce(new AcDbLine(capl, jrl));
-    // vertical stroke outer
-    appendAcDbEntityAtOnce(new AcDbLine(capr, jru));
+        AcGePoint3d capl(center);
+        capl.x -= radius + _rDist;
 
+        AcGePoint3d capr(center);
+        capr.x -= radius;
 
+        // cap of arcs at the left
+        appendAcDbEntityAtOnce(new AcDbLine(capl, capr));
 
+        //todo move caps to right
+        capl.x += _rWidth - capr.x;
+        capr.x += capl.x + _rDist;
 
+        // vertical stroke inner
+        appendAcDbEntityAtOnce(new AcDbLine(capl, jrl));
+        // vertical stroke outer
+        appendAcDbEntityAtOnce(new AcDbLine(capr, jru));
+
+        // copy center for later
+        auto centerLeft = center;
+        // move center to the right
+        center.x = _rWidth - center.x;
+
+        // inner arc
+        appendAcDbEntityAtOnce(new AcDbArc(center, radius, _rPi / 2, 0));
+        // outer arc
+        appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, _rPi / 2, 0));
+
+        // draw lower connection of corners
+        center.y -= radius;
+        centerLeft.y -= radius;
+
+        // upper horizontal connection
+        appendAcDbEntityAtOnce(new AcDbLine(center, centerLeft));
+
+        center.y -= _rDist;
+        centerLeft.y -= _rDist;
+
+        // lower horizontal connection
+        appendAcDbEntityAtOnce(new AcDbLine(center, centerLeft));
+    }
+    // use one center point to draw one half circle
+    else
+    {
+        // inner arc
+        appendAcDbEntityAtOnce(new AcDbArc(center, radius         , _rPi, 0));
+        // outer arc
+        appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, _rPi, 0));
+
+        AcGePoint3d capl(center);
+        capl.x -= radius + _rDist;
+
+        AcGePoint3d capr(center);
+        capr.x -= radius;
+
+        // cap of arcs at the left
+        appendAcDbEntityAtOnce(new AcDbLine(capl, capr));
+
+        capr.x += radius * 2 + _rDist;
+        capl.x += radius * 2 + _rDist;
+
+        // vertical stroke inner
+        appendAcDbEntityAtOnce(new AcDbLine(capl, jrl));
+        // vertical stroke outer
+        appendAcDbEntityAtOnce(new AcDbLine(capr, jru));
+    }
 }
 
