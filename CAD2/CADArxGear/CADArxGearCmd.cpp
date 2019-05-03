@@ -1,0 +1,14 @@
+//////////////////////////////////////////////////////////////////////
+// CADArxGearCmd.cpp
+// Ein Kommando zum Erzeugen eines Zahnradprofils
+//////////////////////////////////////////////////////////////////////
+
+#include "CADArxGear.h"
+
+void CADArxGearCmd() 
+{ 
+    CADArxGear gear;
+    if ( gear.DataInput() && gear.Calc() )
+        gear.Create();
+}
+
