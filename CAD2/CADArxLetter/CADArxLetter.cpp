@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 //////////////////////////////////////////////////////////////////////
 // CADArxLetter.cpp
 // Klasse CADArxLetter
@@ -272,4 +273,5 @@ void CADArxLetter::Create(void)
         appendAcDbEntityAtOnce(new AcDbLine(capr, jru));
     }
 }
+
 
