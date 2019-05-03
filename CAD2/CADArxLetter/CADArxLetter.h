@@ -9,6 +9,8 @@
 
 #include <adsdef.h>
 #include <gepnt3d.h>
+#include <dbsymtb.h>
+
 
 class AcGePoint2d;
 class AcDbBlockTableRecord;
@@ -27,8 +29,14 @@ private:
     ads_real    _rHeight;
     ads_real    _rDist;
     AcGePoint3d _ptRef;
+    AcDbBlockTable* _pBlockTable;
+    AcDbBlockTableRecord* _pBlockTableRecord;
+    bool _creationOk;
 
     bool _bInitialized;
 
     static const ads_real _rPi;
+    void appendAcDbEntityAtOnce(AcDbEntity* pEntity);
+    void checkParameters
+    ();
 };

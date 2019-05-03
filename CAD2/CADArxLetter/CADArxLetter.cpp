@@ -39,10 +39,15 @@ const ads_real CADArxLetter::_rPi = /* M_PI; //*/ 3.14159265359;
 CADArxLetter::CADArxLetter(void)
 {
     _bInitialized = false;
+    acdbHostApplicationServices()->workingDatabase()->getSymbolTable(_pBlockTable, AcDb::kForRead);
+    _pBlockTable->getAt(ACDB_MODEL_SPACE, _pBlockTableRecord, AcDb::kForWrite);
+    _creationOk = true;
 }
 
 CADArxLetter::~CADArxLetter(void)
 {
+    _pBlockTableRecord->close();
+    _pBlockTable->close();
 }
 
 bool CADArxLetter::DataInput(void)
@@ -96,29 +101,92 @@ void printMessage(std::string const& s)
 
 // do all the stuff at once
 // ignores AcDbObjectId pOutputId
-Acad::ErrorStatus appendAcDbEntityAtOnce(AcDbEntity* pEntity)
+void CADArxLetter::appendAcDbEntityAtOnce(AcDbEntity* pEntity)
 {
-    AcDbBlockTable* pBlockTable;
-    acdbHostApplicationServices()->workingDatabase()->getSymbolTable(pBlockTable, AcDb::kForRead);
-
-    AcDbBlockTableRecord* pBlockTableRecord;
-    pBlockTable->getAt(ACDB_MODEL_SPACE, pBlockTableRecord, AcDb::kForWrite);
+    if (typeid(*pEntity) == typeid(AcDbLine)) 
+    {
+        // check if line is long enough
+        AcDbLine* line = dynamic_cast<AcDbLine*>(pEntity);
+        AcGePoint3d start = line->startPoint();
+        AcGePoint3d end = line->endPoint();
+        double length = (start.x - end.x) * (start.x - end.x);
+        length += (start.y - end.y) * (start.y - end.y);
+        length += (start.z - end.z) * (start.z - end.z);
+        if (sqrt(length) < 1.0f)
+        {
+            if (_creationOk)
+            {
+                printMessage("a length is less than 1!\n");
+            }
+            _creationOk = false;
+        }
+    }
+    else if (typeid(*pEntity) == typeid(AcDbArc))
+    {
+        // check if radius is large enough
+        AcDbArc* arc = dynamic_cast<AcDbArc*>(pEntity);
+        if (arc->radius() < 1.0f)
+        {   
+            if (_creationOk)
+            {
+                printMessage("a radius is less than 1!\n");
+            }
+            _creationOk = false;
+        }
+    }
 
     // Nun können die einzelnen Entities hinzugefügt werden.
-    AcDbObjectId pOutputId; // to give as reference
-    Acad::ErrorStatus es = pBlockTableRecord->appendAcDbEntity(pOutputId, pEntity);
+    AcDbObjectId pOutputId; // to give as reference and thereafter ignore
+    Acad::ErrorStatus es = _pBlockTableRecord->appendAcDbEntity(pOutputId, pEntity);
 
     pEntity->close();
-    pBlockTableRecord->close();
-    pBlockTable->close();
+    
+    if (es != Acad::ErrorStatus::eOk || !_creationOk)
+    {
+        throw(std::runtime_error("CADarxLetter:: an error occured, i can not continue!"));
+    }
+}
 
-    return es;
+void CADArxLetter::checkParameters()
+{
+    if (_rDist < 1.0f)
+    {
+        _creationOk = false;
+    }
+
+    if (_rWidth < _rWidth / 5 + _rDist * 2 + 2/*min radius*/)
+    {
+        _creationOk = false;
+    }
+
+    if (_rHeight < _rHeight / 5 + _rDist * 2 + 2/*min radius*/)
+    {
+        _creationOk = false;
+    }
+
+    double radiusY = _rHeight / 3 - _rHeight/10 - _rDist;
+    double radiusX = _rHeight / 3 -  _rWidth/10 - _rDist;
+    if (radiusY < 1.0f || radiusX < 1.0f)
+    {
+        _creationOk = false;
+    }
+
+    if (_creationOk == false)
+    {
+        printMessage("CADarxLetter:: values too small, can not create\n");
+    }
 }
 
 
 void CADArxLetter::Create(void)
 {
     if (!_bInitialized)
+    {
+        return;
+    }
+
+    checkParameters();
+    if (!_creationOk)
     {
         return;
     }
@@ -140,137 +208,150 @@ void CADArxLetter::Create(void)
     AcGePoint3d rl(_ptRef);
     rl.x += _rWidth;
 
-    std::string msg;
-    msg += "\n";
-    msg += __FUNCTION__;
-    msg += " _ptRef: " + std::to_string(_ptRef.x) + " " + std::to_string(_ptRef.y) + " " + std::to_string(_ptRef.z);
-    msg += "     lu: " + std::to_string(lu.x) + " " + std::to_string(lu.y) + " " + std::to_string(lu.z);
+    //std::string msg;
+    //msg += "\n";
+    //msg += __FUNCTION__;
+    //msg += " _ptRef: " + std::to_string(_ptRef.x) + " " + std::to_string(_ptRef.y) + " " + std::to_string(_ptRef.z);
+    //msg += "     lu: " + std::to_string(lu.x) + " " + std::to_string(lu.y) + " " + std::to_string(lu.z);
 
-    printMessage(msg);
-
-    // define bounding rectangle
-    appendAcDbEntityAtOnce(new AcDbLine(_ptRef, lu));
-    appendAcDbEntityAtOnce(new AcDbLine(lu, ru));
-    appendAcDbEntityAtOnce(new AcDbLine(ru, rl));
-    appendAcDbEntityAtOnce(new AcDbLine(rl, _ptRef));
-
-    double w10 = _rWidth  / 10;
-    double h10 = _rHeight / 10;
-
-    AcGePoint3d jlu(lu);
-    jlu.x += w10;
-    jlu.y -= h10;
-
-    AcGePoint3d jru(ru);
-    jru.x -= w10;
-    jru.y -= h10;
-
-    // upper horizontal stroke
-    appendAcDbEntityAtOnce(new AcDbLine(jlu, jru));
-
-    AcGePoint3d jll(jlu);
-    jll.y -= _rDist;
-
-    AcGePoint3d jrl(jru);
-    jrl.y -= _rDist;
-    jrl.x -= _rDist;
-
-    // lower horizontal stroke
-    appendAcDbEntityAtOnce(new AcDbLine(jll, jrl));
-    // cap of upper part on the left
-    appendAcDbEntityAtOnce(new AcDbLine(jlu, jll));
-
-    AcGePoint3d center(_ptRef);
-    center.x += _rWidth / 2;
-    double radius = _rWidth / 2 - w10 - _rDist;
-    center.y += radius + h10;
-
-    // is the letter tall enough for only one center point?
-    if (center.y >= _rHeight / 3)
+    //printMessage(msg);
+    try
     {
-        // draw two quarter circles in each corner, connected at the bottom
+        // define bounding rectangle
+        appendAcDbEntityAtOnce(new AcDbLine(_ptRef, lu));
+        appendAcDbEntityAtOnce(new AcDbLine(lu, ru));
+        appendAcDbEntityAtOnce(new AcDbLine(ru, rl));
+        appendAcDbEntityAtOnce(new AcDbLine(rl, _ptRef));
 
-        // draw left corner first
-        // outer circle quadrant first
-        center.y = _rHeight / 3;
-        double radiusY = center.y - h10 - _rDist;
+        double w10 = _rWidth  / 10;
+        double h10 = _rHeight / 10;
 
-        center.x = center.y;
-        double radiusX = center.x - w10 - _rDist;
+        AcGePoint3d jlu(lu);
+        jlu.x += w10;
+        jlu.y -= h10;
 
-        radius = min(radiusX, radiusY);
+        AcGePoint3d jru(ru);
+        jru.x -= w10;
+        jru.y -= h10;
 
-        // inner arc
-        appendAcDbEntityAtOnce(new AcDbArc(center, radius, _rPi, 3*_rPi/2));
-        // outer arc
-        appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, _rPi, 3 * _rPi / 2));
+        // upper horizontal stroke
+        appendAcDbEntityAtOnce(new AcDbLine(jlu, jru));
 
-        AcGePoint3d capl(center);
-        capl.x -= radius + _rDist;
+        AcGePoint3d jll(jlu);
+        jll.y -= _rDist;
 
-        AcGePoint3d capr(center);
-        capr.x -= radius;
+        AcGePoint3d jrl(jru);
+        jrl.y -= _rDist;
+        jrl.x -= _rDist;
 
-        // cap of arcs at the left
-        appendAcDbEntityAtOnce(new AcDbLine(capl, capr));
+        // lower horizontal stroke
+        appendAcDbEntityAtOnce(new AcDbLine(jll, jrl));
+        // cap of upper part on the left
+        appendAcDbEntityAtOnce(new AcDbLine(jlu, jll));
 
-        //todo move caps to right
-        capl.x += _rWidth - capr.x;
-        capr.x += capl.x + _rDist;
+        AcGePoint3d center(_ptRef);
+        center.x += _rWidth / 2;
+        double radius = _rWidth / 2 - w10 - _rDist;
+        center.y += radius + h10 + _rDist;
 
-        // vertical stroke inner
-        appendAcDbEntityAtOnce(new AcDbLine(capl, jrl));
-        // vertical stroke outer
-        appendAcDbEntityAtOnce(new AcDbLine(capr, jru));
+        // is the letter tall enough for only one center point?
+        if (center.y >= _ptRef.y + _rHeight / 3)
+        {
+            // draw two quarter circles in each corner, connected at the bottom
 
-        // copy center for later
-        auto centerLeft = center;
-        // move center to the right
-        center.x = _rWidth - center.x;
+            // draw left corner first
+            // outer circle quadrant first
+            center.y = _rHeight / 3;
+            double radiusY = center.y - h10 - _rDist;
 
-        // inner arc
-        appendAcDbEntityAtOnce(new AcDbArc(center, radius, 3 * _rPi / 2, 0));
-        // outer arc
-        appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, 3 * _rPi / 2, 0));
+            center.x = center.y;
+            double radiusX = center.x - w10 - _rDist;
 
-        // draw lower connection of corners
-        center.y -= radius;
-        centerLeft.y -= radius;
+            center.x += _ptRef.x;
+            center.y += _ptRef.y;
+            center.z += _ptRef.z;
 
-        // upper horizontal connection
-        appendAcDbEntityAtOnce(new AcDbLine(center, centerLeft));
+            radius = min(radiusX, radiusY);
 
-        center.y -= _rDist;
-        centerLeft.y -= _rDist;
+            // inner arc
+            appendAcDbEntityAtOnce(new AcDbArc(center, radius, _rPi, 3*_rPi/2));
+            // outer arc
+            appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, _rPi, 3 * _rPi / 2));
 
-        // lower horizontal connection
-        appendAcDbEntityAtOnce(new AcDbLine(center, centerLeft));
+            AcGePoint3d capl(center);
+            capl.x -= radius + _rDist;
+
+            AcGePoint3d capr(center);
+            capr.x -= radius;
+
+            // cap of arcs at the left
+            appendAcDbEntityAtOnce(new AcDbLine(capl, capr));
+
+
+            // copy center for later
+            auto centerLeft = center;
+            // move center to the right
+            center.x = _ptRef.x + _rWidth -(_rDist + radius + w10);
+
+            //todo move caps to right
+            capl.x = center.x + radius;
+            capr.x = center.x + radius + _rDist;
+
+            // vertical stroke inner
+            appendAcDbEntityAtOnce(new AcDbLine(capl, jrl));
+            // vertical stroke outer
+            appendAcDbEntityAtOnce(new AcDbLine(capr, jru));
+
+
+            // inner arc
+            appendAcDbEntityAtOnce(new AcDbArc(center, radius, 3 * _rPi / 2, 0));
+            // outer arc
+            appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, 3 * _rPi / 2, 0));
+
+            // draw lower connection of corners
+            center.y -= radius;
+            centerLeft.y -= radius;
+
+            // upper horizontal connection
+            appendAcDbEntityAtOnce(new AcDbLine(center, centerLeft));
+
+            center.y -= _rDist;
+            centerLeft.y -= _rDist;
+
+            // lower horizontal connection
+            appendAcDbEntityAtOnce(new AcDbLine(center, centerLeft));
+        }
+        // use one center point to draw one half circle
+        else
+        {
+            // inner arc
+            appendAcDbEntityAtOnce(new AcDbArc(center, radius         , _rPi, 0));
+            // outer arc
+            appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, _rPi, 0));
+
+            AcGePoint3d capl(center);
+            capl.x -= radius + _rDist;
+
+            AcGePoint3d capr(center);
+            capr.x -= radius;
+
+            // cap of arcs at the left
+            appendAcDbEntityAtOnce(new AcDbLine(capl, capr));
+
+            capr.x += radius * 2 + _rDist;
+            capl.x += radius * 2 + _rDist;
+
+            // vertical stroke inner
+            appendAcDbEntityAtOnce(new AcDbLine(capl, jrl));
+            // vertical stroke outer
+            appendAcDbEntityAtOnce(new AcDbLine(capr, jru));
+        }
     }
-    // use one center point to draw one half circle
-    else
+    catch (const std::exception&)
     {
-        // inner arc
-        appendAcDbEntityAtOnce(new AcDbArc(center, radius         , _rPi, 0));
-        // outer arc
-        appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, _rPi, 0));
-
-        AcGePoint3d capl(center);
-        capl.x -= radius + _rDist;
-
-        AcGePoint3d capr(center);
-        capr.x -= radius;
-
-        // cap of arcs at the left
-        appendAcDbEntityAtOnce(new AcDbLine(capl, capr));
-
-        capr.x += radius * 2 + _rDist;
-        capl.x += radius * 2 + _rDist;
-
-        // vertical stroke inner
-        appendAcDbEntityAtOnce(new AcDbLine(capl, jrl));
-        // vertical stroke outer
-        appendAcDbEntityAtOnce(new AcDbLine(capr, jru));
+        // error out without notice, lets see how that goes...
     }
+
 }
 
 
