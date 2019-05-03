@@ -193,17 +193,17 @@ void CADArxLetter::Create(void)
         // draw left corner first
         // outer circle quadrant first
         center.y = _rHeight / 3;
-        double radiusY = center.y - h10;
+        double radiusY = center.y - h10 - _rDist;
 
         center.x = center.y;
-        double radiusX = center.x - w10;
+        double radiusX = center.x - w10 - _rDist;
 
         radius = min(radiusX, radiusY);
 
         // inner arc
-        appendAcDbEntityAtOnce(new AcDbArc(center, radius, _rPi, _rPi/2));
+        appendAcDbEntityAtOnce(new AcDbArc(center, radius, _rPi, 3*_rPi/2));
         // outer arc
-        appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, _rPi, _rPi / 2));
+        appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, _rPi, 3 * _rPi / 2));
 
         AcGePoint3d capl(center);
         capl.x -= radius + _rDist;
@@ -229,9 +229,9 @@ void CADArxLetter::Create(void)
         center.x = _rWidth - center.x;
 
         // inner arc
-        appendAcDbEntityAtOnce(new AcDbArc(center, radius, _rPi / 2, 0));
+        appendAcDbEntityAtOnce(new AcDbArc(center, radius, 3 * _rPi / 2, 0));
         // outer arc
-        appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, _rPi / 2, 0));
+        appendAcDbEntityAtOnce(new AcDbArc(center, radius + _rDist, 3 * _rPi / 2, 0));
 
         // draw lower connection of corners
         center.y -= radius;
