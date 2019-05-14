@@ -4,9 +4,9 @@ format compact;
 format shortg;
 
 %%
-zz = 36; % zahnanzahl
+zz = 12; % zahnanzahl
 m = 3; % modul
-anz_linienstuecke = 5;
+anz_linienstuecke = 500;
 
 %%
 alpha_0 = 20/180*pi; % eingriffswinkel
@@ -52,7 +52,7 @@ evolventeSpiegel(:,2) = -evolventeSpiegel(:,2);
 %plotMat(evolvente);
 
 drehmatrix = [cos(phi), -sin(phi);
-              sin(phi), cos(phi) ];
+              sin(phi),  cos(phi) ];
 
 
 for i = 1:zz
