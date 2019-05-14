@@ -5,8 +5,8 @@
 
 #include "CADArxGear.h"
 
-void CADArxGearCmd() 
-{ 
+void CADArxGearCmd()
+{
     CADArxGear gear;
     if ( gear.DataInput() && gear.Calc() )
         gear.Create();

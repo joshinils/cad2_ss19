@@ -12,38 +12,38 @@
 #pragma warning( disable : 4512 )
 
 
-#include <aced.h> 
+#include <aced.h>
 #include <rxregsvc.h>
 #include <tchar.h>
 
 void CADArxGearCmd();
 
-void InitApp() 
-{ 
-    acedRegCmds->addCommand(_T("CADARX_COMMANDS"), _T("Gear"), _T("Zahnrad"), 
-                            ACRX_CMD_TRANSPARENT, CADArxGearCmd); 
+void InitApp()
+{
+    acedRegCmds->addCommand(_T("CADARX_COMMANDS"), _T("Gear"), _T("Zahnrad"),
+                            ACRX_CMD_TRANSPARENT, CADArxGearCmd);
 }
 
-void UnloadApp() 
-{ 
-    acedRegCmds->removeGroup(_T("CADARX_COMMANDS")); 
+void UnloadApp()
+{
+    acedRegCmds->removeGroup(_T("CADARX_COMMANDS"));
 }
 
-extern "C" AcRx::AppRetCode 
-acrxEntryPoint(AcRx::AppMsgCode msg, void* pkt) 
-{ 
-    switch (msg) 
-    { 
-        case AcRx::kInitAppMsg: 
-            acrxDynamicLinker->unlockApplication(pkt); 
-            acrxRegisterAppMDIAware(pkt); 
-            InitApp(); 
-            break; 
-        case AcRx::kUnloadAppMsg: 
-            UnloadApp(); 
-            break; 
-        default: 
-            break; 
+extern "C" AcRx::AppRetCode
+acrxEntryPoint(AcRx::AppMsgCode msg, void* pkt)
+{
+    switch (msg)
+    {
+        case AcRx::kInitAppMsg:
+            acrxDynamicLinker->unlockApplication(pkt);
+            acrxRegisterAppMDIAware(pkt);
+            InitApp();
+            break;
+        case AcRx::kUnloadAppMsg:
+            UnloadApp();
+            break;
+        default:
+            break;
     }
     return AcRx::kRetOK;
 }

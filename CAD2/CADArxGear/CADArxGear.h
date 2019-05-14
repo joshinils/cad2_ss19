@@ -48,7 +48,7 @@ private:
     // Hilfsmethode zum Speichern eines Bogenstücks.
     void CreateArc(AcDbBlockTableRecord* pBlockTableRecord,
                    const AcGePoint2d&    ptStart,
-                   const AcGePoint2d&    ptEnd, 
+                   const AcGePoint2d&    ptEnd,
                    ads_real              rR);
 
     // Einige notwendige konstante Grundgrößen:
