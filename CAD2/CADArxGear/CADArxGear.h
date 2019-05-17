@@ -12,6 +12,8 @@
 class AcGePoint2d;
 class AcDbBlockTableRecord;
 
+#include <dbsymtb.h>
+
 class CADArxGear
 {
 public:
@@ -30,6 +32,9 @@ private:
 
     bool      _bInitialized;
     bool      _bIsLengthWarning;
+
+    AcDbBlockTable* _pBlockTable;
+    AcDbBlockTableRecord* _pBlockTableRecord;
 
     AcGePoint2d* _pPts;
 

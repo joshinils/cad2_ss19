@@ -48,11 +48,17 @@ CADArxGear::CADArxGear(void)
     _rRf = 0.0;
     _rRa = 0.0;
     _rDelta = 0.0;
+
+    acdbHostApplicationServices()->workingDatabase()->getSymbolTable(_pBlockTable, AcDb::kForRead);
+    _pBlockTable->getAt(ACDB_MODEL_SPACE, _pBlockTableRecord, AcDb::kForWrite);
+
 }
 
 CADArxGear::~CADArxGear(void)
 {
     delete[] _pPts;
+    _pBlockTableRecord->close();
+    _pBlockTable->close();
 }
 
 bool CADArxGear::DataInput(void)
@@ -112,6 +118,7 @@ void printMessage(std::string const& s)
 
 bool CADArxGear::Calc(void)
 {
+
     if ( !_bInitialized )
         return false;
 
@@ -125,19 +132,20 @@ bool CADArxGear::Calc(void)
     _rDelta = _rPi / (2 * _nTeethNumber) + _rTanAlpha0 - _rAlpha0;
 //    _rPhi = 2 * pi / _nTeethNumber;
 
-    // fusskreis r_f > flankenkreis r_b
-    if (_rRf < _rRb)
-    {
-        printMessage("CADArxGear::Calc:: fusskreis r_f < flankenkreis r_b\n");
-        throw(std::runtime_error("CADArxGear::Calc:: fusskreis r_f < flankenkreis r_b\n"));
-    }
-
 	// Zum Testen und für die Bewertung die berechneten Zwischenergebnisse ausgeben:
 	acutPrintf(_T("\n r0 = %6.2f"    ), _rR0);
 	acutPrintf(_T("\n rb = %10.6f"   ), _rRb);
 	acutPrintf(_T("\n rf = %6.2f"    ), _rRf);
 	acutPrintf(_T("\n ra = %6.2f"    ), _rRa);
 	acutPrintf(_T("\n delta = %10.6f"), _rDelta);
+
+    // fusskreis r_f > flankenkreis r_b
+    if (_rRf < _rRb)
+    {
+        printMessage("CADArxGear::Calc:: fusskreis r_f < basiskreis r_b\n");
+        return false;
+        // throw(std::runtime_error("CADArxGear::Calc:: fusskreis r_f < basiskreis r_b\n"));
+    }
 
     if (_pPts != NULL)
     {
@@ -146,15 +154,15 @@ bool CADArxGear::Calc(void)
 
     _pPts = new AcGePoint2d[_nPointNumber];
 
-    double r = _rRb;
-    double dR = (_rRa - _rRb) / _nPointNumber;
+    double r = _rRf;
+    double dR = (_rRa - _rRf) / (_nPointNumber -1);
     for (size_t i = 0; i < _nPointNumber; i++)
     {
         double u = 1 / _rRb * sqrt(r * r - _rRb * _rRb);
 
         double Delta = u - _rDelta;
         double cosDelta = cos(Delta);
-        double sinDelta = cos(Delta);
+        double sinDelta = sin(Delta);
         double ptX = _rRb * (cosDelta + u * sinDelta);
         double ptY = _rRb * (sinDelta - u * cosDelta);
 
@@ -250,5 +258,34 @@ void CADArxGear::Create(void)
     // Zur Ermittlung der Punkte der jeweils gedrehten Flanke die Methode können Sie
     // die Methode AcGePoint2d::rotateBy. Informieren Sie sich in der Online-Hilfe über
     // diese Methode.
+
+    // for testing, fusskreis:
+    for (size_t i = 0; i < 4; i++)
+    {
+        double r;
+        switch (i)
+        {
+        case 0:
+            r = _rRb;
+            break;
+        case 1:
+            r = _rRf;
+            break;
+        case 2:
+            r = _rR0;
+            break;
+        case 3:
+            r = _rRa;
+            break;
+        }
+        AcDbArc* kreisTest = new AcDbArc(_ptCenter, r, 2 * _rPi, 0);
+        AcDbObjectId pOutputId; // to give as reference and thereafter ignore
+        Acad::ErrorStatus es = _pBlockTableRecord->appendAcDbEntity(pOutputId, kreisTest);
+        kreisTest->close();
+    }
+    for (size_t i = 0; i < _nPointNumber-1; i++)
+    {
+        CreateLine(_pBlockTableRecord, _pPts[i], _pPts[i + 1]);
+    }
 }
 
