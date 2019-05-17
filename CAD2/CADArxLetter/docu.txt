@@ -1,0 +1,62 @@
+bool CADArxLetter::DataInput(void)
+is used to get input from the user via autocad
+
+void CADArxLetter::checkParameters()
+will be called at the beginning which confirms that the Letter to be created will end up being legal.
+no part of the letter will be too small, too large or "wrong" in any way, or intersecting the border around everything.
+
+
+void CADArxLetter::Create(void)
+calculates points needed to create the entities which make up the letter
+
+
+AcGePoint3d(double, double, double)
+creates a 3-D point containing three coordinates.
+
+AcDbEntity
+is a father class of AcDbLine and AcDbArc
+
+AcDbLine(AcGePoint3d&. AcGePoint3d&)
+creates a line segment connecting the two given arguments.
+
+AcDbArc(AcGePoint3d&, double, double, double)
+creates a segment of a circle, with center and radius, from one angle to another given in radians
+ie. ((0,0,0), 1, 0, 2*pi) would be a complete circle around the origin with diameter 2.
+
+
+AcDbBlockTable* _pBlockTable;
+Is a database structure that can hold a block table record.
+Has to be closed at the end.
+Is here used as a pointer as there already exists an instance which can be accessed via:
+acdbHostApplicationServices()->workingDatabase()->getSymbolTable(_pBlockTable, AcDb::kForRead);
+
+
+AcDbBlockTableRecord* _pBlockTableRecord; (abbreviated via BTR)
+Is a database structure that can hold geometric entities such as instances of AcDbEntity.
+Has to be closed at the end.
+Also already exists, can also be "asked for" via:
+_pBlockTable->getAt(ACDB_MODEL_SPACE, _pBlockTableRecord, AcDb::kForWrite);
+
+
+after that entities may be added via my own function:
+
+void CADArxLetter::appendAcDbEntityAtOnce(AcDbEntity* pEntity)
+which then checks for validity of the given entity, adds it to the BTR, and closes it.
+Adding an entity to the BTR gives an id to the added entity	of type "AcDbObjectId",
+this is ignored, it also returns an Acad::ErrorStatus which is checked to be ok, otherwise a runtime-exception is thrown.
+
+
+void printMessage(std::string const& s)
+Prints a std::string converted to wstring in autocad
+
+// from https://stackoverflow.com/questions/10737644/convert-const-char-to-wstring
+std::wstring s2ws(const std::string& str)
+Used by printMessage() to convert a std::string into a std::wstring.
+
+CADArxLetter::CADArxLetter(void)
+Opens database objects and initializes some class-members.
+
+
+CADArxLetter::~CADArxLetter(void)
+Closes the database objects.
+
