@@ -4,16 +4,16 @@ format compact;
 format shortg;
 
 %%
-zz = 12; % zahnanzahl
+zz = 36; % zahnanzahl
 m = 3; % modul
 anz_linienstuecke = 500;
 
 %%
 alpha_0 = 20/180*pi; % eingriffswinkel
-r_0 = (m*zz)/2;
-r_b = r_0 * cos(alpha_0);
-r_f = r_0 - m;
-r_a = r_0 + m;
+r0 = (m*zz)/2;
+rb = r0 * cos(alpha_0);
+rf = r0 - m;
+ra = r0 + m;
 delta = pi/(2*zz) + tan(alpha_0) - alpha_0;
 phi = 2*pi/zz;
 
@@ -22,13 +22,13 @@ axis equal;
 hold on;
 plot([0;0],[0,0], 'xk');
 hold on;
-circle(r_0, '-.b');
-circle(r_b, '-.k');
-circle(r_a, '-b');
-circle(r_f, '-k');
+circle(r0, '-.b');
+circle(rb, '-.k');
+circle(ra, '-b');
+circle(rf, '-m');
 
 th = (0:2*pi/zz:2*pi)';
-r = r_a*1.1;
+r = ra*1.1;
 xDiv = r * cos(th);
 yDiv = r * sin(th);
 hold on;
@@ -38,19 +38,19 @@ end
 
 
 %%
-r = linspace(r_b, r_a, anz_linienstuecke+1)';
-u = 1/r_b .* sqrt(r.^2 - r_b.^2);
+r = linspace(rf, ra, anz_linienstuecke+1)';
+u = 1/rb .* sqrt(r.^2 - rb.^2);
 
 
-evolvente(:,1) = r_b .* (cos(u-delta) + u.*sin(u-delta));
-evolvente(:,2) = r_b .* (sin(u-delta) - u.*cos(u-delta));
+evolvente(:,1) = rb .* (cos(u-delta) + u.*sin(u-delta));
+evolvente(:,2) = rb .* (sin(u-delta) - u.*cos(u-delta));
 
 evolventeSpiegel = evolvente;
 evolventeSpiegel(:,2) = -evolventeSpiegel(:,2);
 
 %plotMat(evolventeSpiegel);
-%plotMat(evolvente);
-
+plotMat(evolvente);
+return;
 drehmatrix = [cos(phi), -sin(phi);
               sin(phi),  cos(phi) ];
 
@@ -58,7 +58,7 @@ drehmatrix = [cos(phi), -sin(phi);
 for i = 1:zz
     evolvente = (drehmatrix * evolvente')';
     plotMat(evolvente);
-
+    
     evolventeSpiegel = (drehmatrix * evolventeSpiegel')';
     plotMat(evolventeSpiegel);
 end
