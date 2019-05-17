@@ -10,7 +10,7 @@ function [ h ] = circle( r, x, y )
     end
 
     hold on;
-    th = 0:pi/50:2*pi;
+    th = 0:pi/500:2*pi;
     xunit = r * cos(th) + x;
     yunit = r * sin(th) + y;
     if nargin ~= 2
