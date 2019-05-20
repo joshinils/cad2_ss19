@@ -152,7 +152,7 @@ bool CADArxGear::Calc(void)
         delete[] _pPts;
     }
 
-    _pPts = new AcGePoint2d[_nPointNumber];
+    _pPts = new AcGePoint2d[_nPointNumber * 2];
 
     double r = _rRf;
     double dR = (_rRa - _rRf) / (_nPointNumber -1);
@@ -166,8 +166,8 @@ bool CADArxGear::Calc(void)
         double ptX = _rRb * (cosDelta + u * sinDelta);
         double ptY = _rRb * (sinDelta - u * cosDelta);
 
-        // create point which is moved into place
-        _pPts[i] = AcGePoint2d(ptX + _ptCenter.x, ptY + _ptCenter.y);
+        _pPts[i] = AcGePoint2d(ptX, ptY);
+        _pPts[i + _nPointNumber] = AcGePoint2d(ptX, -ptY);
 
         r += dR;
     }
@@ -185,8 +185,8 @@ void CADArxGear::CreateLine(AcDbBlockTableRecord* pBlockTableRecord,
     //TODO: check bogenlänge for large enough length
 
     // check if line is long enough
-    auto start = AcGePoint3d(ptStart.x, ptStart.y, _ptCenter.z);
-    auto end = AcGePoint3d(ptEnd.x, ptEnd.y, _ptCenter.z);
+    auto start = AcGePoint3d(ptStart.x + _ptCenter.x, ptStart.y + _ptCenter.y, _ptCenter.z);
+    auto end   = AcGePoint3d(ptEnd.x   + _ptCenter.x, ptEnd.y   + _ptCenter.y, _ptCenter.z);
 
     AcDbLine* pEntity = new AcDbLine(start, end);
     double length = (start.x - end.x) * (start.x - end.x);
@@ -223,7 +223,7 @@ void CADArxGear::CreateArc(AcDbBlockTableRecord* pBlockTableRecord,
 
     //TODO: check bogenlänge for large enough length
 
-    double startAngle = asin((ptStart.y - _ptCenter.y)/rR), endAngle = asin((ptEnd.y - _ptCenter.y) / rR);
+    double startAngle = asin(ptStart.y / rR), endAngle = asin(ptEnd.y / rR);
     //TODO: confirm correct order of arguments
     AcDbArc* pEntity = new AcDbArc(_ptCenter, rR, startAngle, endAngle);
 
@@ -262,7 +262,7 @@ void CADArxGear::Create(void)
     // for testing, fusskreis:
     for (size_t i = 0; i < 4; i++)
     {
-        double r;
+        double r = 0;
         switch (i)
         {
         case 0:
@@ -283,9 +283,29 @@ void CADArxGear::Create(void)
         Acad::ErrorStatus es = _pBlockTableRecord->appendAcDbEntity(pOutputId, kreisTest);
         kreisTest->close();
     }
-    for (size_t i = 0; i < _nPointNumber-1; i++)
+
+    AcGePoint2d innerBegin = _pPts[_nPointNumber];
+    for (size_t t = 0; t < _nTeethNumber; ++t)
     {
-        CreateLine(_pBlockTableRecord, _pPts[i], _pPts[i + 1]);
+        for (size_t i = 0; i < _nPointNumber-1; i++)
+        {
+            CreateLine(_pBlockTableRecord, _pPts[i                ], _pPts[i +                 1]); // original
+            CreateLine(_pBlockTableRecord, _pPts[i + _nPointNumber], _pPts[i + _nPointNumber + 1]); // mirrored
+        }
+
+        // outer connection, between end of orig, end of mirrored
+        CreateArc(_pBlockTableRecord, _pPts[_nPointNumber], _pPts[_nPointNumber * 2], _rRa);
+
+        // rotate tooth along
+        for (size_t p = 0; p < _nPointNumber*2; p++)
+        {
+            const double phi = 2 * _rPi / _nTeethNumber;
+            _pPts[p].rotateBy(phi);
+        }
+
+        // inner connection, between start of (now rotated) orig, start of last iterations mirrored
+        CreateArc(_pBlockTableRecord, _pPts[0], innerBegin, _rRa);
+        innerBegin = _pPts[_nPointNumber];
     }
 }
 

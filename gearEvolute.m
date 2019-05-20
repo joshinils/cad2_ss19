@@ -50,10 +50,10 @@ evolventeSpiegel(:,2) = -evolventeSpiegel(:,2);
 
 %plotMat(evolventeSpiegel);
 plotMat(evolvente);
-return;
 drehmatrix = [cos(phi), -sin(phi);
               sin(phi),  cos(phi) ];
 
+          return;
 
 for i = 1:zz
     evolvente = (drehmatrix * evolvente')';
