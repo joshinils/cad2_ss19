@@ -56,7 +56,7 @@ CADArxGear::CADArxGear(void)
 
 CADArxGear::~CADArxGear(void)
 {
-    delete[] _pPts;
+    delete[] _pPts; _pPts = nullptr;
     _pBlockTableRecord->close();
     _pBlockTable->close();
 }
@@ -196,7 +196,7 @@ void CADArxGear::CreateLine(AcDbBlockTableRecord* pBlockTableRecord,
     {
         if (!_bIsLengthWarning)
         {
-            printMessage("a length is less than 1!\n");
+            printMessage("CADArxGear::CreateLine:: a length is less than eps!\n");
         }
         _bIsLengthWarning = true;
     }
@@ -218,22 +218,43 @@ void CADArxGear::CreateArc(AcDbBlockTableRecord* pBlockTableRecord,
                            const AcGePoint2d&    ptEnd,
                            ads_real              rR)
 {
-    // Fügen Sie hier den Code zum Speichern eines Bogenstücks ein
-    // und zum Prüfen der Bogenlänge vor dem Speichern.
+    auto atanArg = [](double a) -> double
+    {
+        printMessage( "atanArg " + std::to_string(a) + " = " + std::to_string(atan(a)) + "\n" );
+        return atan(a);
+    };
 
-    //TODO: check bogenlänge for large enough length
+    double startAngle = atan(ptStart.y / ptStart.x), endAngle = atan(ptEnd.y / ptEnd.x);
 
-    double startAngle = asin(ptStart.y / rR), endAngle = asin(ptEnd.y / rR);
-    //TODO: confirm correct order of arguments
+    // fix angle to correct quadrant where the point is acually located
+    if (ptStart.x < 0)
+    {
+        startAngle += _rPi;
+    }
+    else if (ptStart.y < 0)
+    {
+        startAngle += 2 * _rPi;
+    }
+
+    if (ptEnd.x < 0)
+    {
+        endAngle += _rPi;
+    }
+    else if (ptEnd.y < 0)
+    {
+        startAngle += _rPi*2;
+    }
+
     AcDbArc* pEntity = new AcDbArc(_ptCenter, rR, startAngle, endAngle);
+
 
     // bogenlänge ist r*alpha = radius * öffnungswinkel
     // check if radius is large enough
-    if (rR * (endAngle - startAngle) < CADArx_Length_Eps)
+    if (abs(rR * (endAngle - startAngle)) < CADArx_Length_Eps)
     {
         if (!_bIsLengthWarning)
         {
-            printMessage("a radius is less than 1!\n");
+            printMessage("CADArxGear::CreateArc:: a radius is less than eps!\n");
         }
         _bIsLengthWarning = true;
     }
@@ -254,35 +275,30 @@ void CADArxGear::Create(void)
     if ( NULL == _pPts )
         return;
 
-    // Fügen Sie hier den Code zur Speicherung der AcDbLine- bzw. AcDbArc-Elemente ein.
-    // Zur Ermittlung der Punkte der jeweils gedrehten Flanke die Methode können Sie
-    // die Methode AcGePoint2d::rotateBy. Informieren Sie sich in der Online-Hilfe über
-    // diese Methode.
-
-    // for testing, fusskreis:
-    for (size_t i = 0; i < 4; i++)
-    {
-        double r = 0;
-        switch (i)
-        {
-        case 0:
-            r = _rRb;
-            break;
-        case 1:
-            r = _rRf;
-            break;
-        case 2:
-            r = _rR0;
-            break;
-        case 3:
-            r = _rRa;
-            break;
-        }
-        AcDbArc* kreisTest = new AcDbArc(_ptCenter, r, 2 * _rPi, 0);
-        AcDbObjectId pOutputId; // to give as reference and thereafter ignore
-        Acad::ErrorStatus es = _pBlockTableRecord->appendAcDbEntity(pOutputId, kreisTest);
-        kreisTest->close();
-    }
+    //// for testing, fusskreis:
+    //for (size_t i = 0; i < 4; i++)
+    //{
+    //    double r = 0;
+    //    switch (i)
+    //    {
+    //    case 0:
+    //        r = _rRb;
+    //        break;
+    //    case 1:
+    //        r = _rRf;
+    //        break;
+    //    case 2:
+    //        r = _rR0;
+    //        break;
+    //    case 3:
+    //        r = _rRa;
+    //        break;
+    //    }
+    //    AcDbArc* kreisTest = new AcDbArc(_ptCenter, r, 2 * _rPi, 0);
+    //    AcDbObjectId pOutputId; // to give as reference and thereafter ignore
+    //    Acad::ErrorStatus es = _pBlockTableRecord->appendAcDbEntity(pOutputId, kreisTest);
+    //    kreisTest->close();
+    //}
 
     AcGePoint2d innerBegin = _pPts[_nPointNumber];
     for (size_t t = 0; t < _nTeethNumber; ++t)
@@ -294,17 +310,17 @@ void CADArxGear::Create(void)
         }
 
         // outer connection, between end of orig, end of mirrored
-        CreateArc(_pBlockTableRecord, _pPts[_nPointNumber], _pPts[_nPointNumber * 2], _rRa);
+        CreateArc(_pBlockTableRecord, _pPts[_nPointNumber -1], _pPts[_nPointNumber * 2 -1], _rRa);
 
+        const double phi = 2.0f * _rPi / _nTeethNumber;
         // rotate tooth along
         for (size_t p = 0; p < _nPointNumber*2; p++)
         {
-            const double phi = 2 * _rPi / _nTeethNumber;
             _pPts[p].rotateBy(phi);
         }
 
         // inner connection, between start of (now rotated) orig, start of last iterations mirrored
-        CreateArc(_pBlockTableRecord, _pPts[0], innerBegin, _rRa);
+        CreateArc(_pBlockTableRecord, innerBegin, _pPts[0], _rRf);
         innerBegin = _pPts[_nPointNumber];
     }
 }

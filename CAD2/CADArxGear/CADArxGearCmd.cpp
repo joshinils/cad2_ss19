@@ -7,8 +7,12 @@
 
 void CADArxGearCmd()
 {
-    CADArxGear gear;
-    if ( gear.DataInput() && gear.Calc() )
-        gear.Create();
+    try
+    {
+        CADArxGear gear;
+        if (gear.DataInput() && gear.Calc())
+            gear.Create();
+    }
+    catch (const std::exception&) { }
 }
 
