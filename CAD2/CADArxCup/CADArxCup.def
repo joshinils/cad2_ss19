@@ -1,0 +1,4 @@
+LIBRARY	CADArxCup.arx
+EXPORTS acrxEntryPoint     PRIVATE
+        acrxGetApiVersion  PRIVATE
+
