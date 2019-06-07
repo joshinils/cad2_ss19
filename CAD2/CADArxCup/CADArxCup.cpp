@@ -101,6 +101,16 @@ bool CADArxCup::Calc(void)
     // Zwischenergebnisse: _rHorWidth, _rSphereRadiusOnCup (siehe CADArxCup.h)
     // AcGePoint2d-Feld für das Profil: _pPtsProfile[10] (siehe CADArxCup.h)
 
+    _pPtsProfile[0] = _pPtsProfile[9] = AcGePoint2d();
+    _pPtsProfile[1] = AcGePoint2d( _rDiameter * 3.0f / 8.0f, 0.0f);
+    _pPtsProfile[2] = AcGePoint2d( _rDiameter / 8.0f, _rHeight / 8.0f );
+    _pPtsProfile[3] = AcGePoint2d( _rDiameter / 8.0f, _rHeight / 4.0f );
+    _pPtsProfile[4] = AcGePoint2d( _rDiameter / 2.0f, _rHeight );
+    _pPtsProfile[5] = AcGePoint2d( _rDiameter / 2.0f - _rHorWidth, _rHeight);
+    _pPtsProfile[6] = AcGePoint2d( _rDiameter / 8.0f - _rWidth, _rInnerStemHeight);
+    _pPtsProfile[7] = AcGePoint2d( _rDiameter / 8.0f - _rWidth, _rHeight / 8.0f);
+    _pPtsProfile[8] = AcGePoint2d( 0, _rHeight / 8.0f);
+
 	// Zum Testen und für die Bewertung
     // die berechneten Werte ausgeben:
 	acutPrintf(_T("\nHorizontal Width     : %8.6f"), _rHorWidth);
