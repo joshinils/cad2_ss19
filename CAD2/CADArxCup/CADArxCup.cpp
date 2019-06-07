@@ -128,7 +128,7 @@ AcDb3dSolid* CADArxCup::CreateSphere(double dPhi)
 
 void CADArxCup::Create(void)
 {
-    // Fügen Sie hier dn Code zur Erzeugung und Speicherung des Pokals ein.
+    // Fuegen Sie hier dn Code zur Erzeugung und Speicherung des Pokals ein.
     // Achten Sie darauf, dass für alle erzeugten Elemente (die Linien,
     // die Fläche, ...) die close-Methode aufgerufen wird.
 
