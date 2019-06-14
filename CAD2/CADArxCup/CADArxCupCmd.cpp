@@ -7,8 +7,13 @@
 
 void CADArxCupCmd()
 {
-    CADArxCup cup;
-    if ( cup.DataInput() && cup.Calc() )
-        cup.Create();
+	try
+	{
+		CADArxCup cup;
+		if ( cup.DataInput() && cup.Calc() )
+			cup.Create();
+	}
+	catch (const std::exception&)
+	{ }
 }
 

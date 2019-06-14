@@ -27,6 +27,13 @@
 #include <stdio.h>
 #include <tchar.h>
 
+// test draw lines
+#include <stdexcept>
+#include <dbsymtb.h>
+
+
+
+
 // Das "Epsilon" zum Testen der Dicke:
 #define CADArx_Width_Eps  0.01
 
@@ -40,10 +47,16 @@ CADArxCup::CADArxCup(void)
 	_rHorWidth = 0.0;
 	_rSphereRadiusOnCup = 0.0;
     _rInnerStemHeight = 0.0;
+
+	// zum testweise anzeigen der kontur
+	acdbHostApplicationServices()->workingDatabase()->getSymbolTable(_pBlockTable, AcDb::kForRead);
+	_pBlockTable->getAt(ACDB_MODEL_SPACE, _pBlockTableRecord, AcDb::kForWrite);
 }
 
 CADArxCup::~CADArxCup(void)
 {
+	_pBlockTableRecord->close();
+	_pBlockTable->close();
 }
 
 bool CADArxCup::DataInput(void)
@@ -106,6 +119,23 @@ bool CADArxCup::Calc(void)
     _pPtsProfile[2] = AcGePoint2d( _rDiameter / 8.0f, _rHeight / 8.0f );
     _pPtsProfile[3] = AcGePoint2d( _rDiameter / 8.0f, _rHeight / 4.0f );
     _pPtsProfile[4] = AcGePoint2d( _rDiameter / 2.0f, _rHeight );
+
+	AcGeVector2d a((_pPtsProfile[2] - _pPtsProfile[3]).x, (_pPtsProfile[2] - _pPtsProfile[3]).y);
+	AcGeVector2d b((_pPtsProfile[4] - _pPtsProfile[3]).x, (_pPtsProfile[4] - _pPtsProfile[3]).y);
+
+	double dot = a.dotProduct(b);
+	dot /= (a.length() * b.length());
+	double angle = a.angleTo(b);
+	double alpha = acos(dot)/2;
+	alpha = angle/2;
+	double tanAlpha = tan(alpha);
+	double gegenkathete = _rWidth / tanAlpha;
+
+	_rInnerStemHeight = _pPtsProfile[3].y + gegenkathete;
+
+	double cosW = cos(_rPi - 2 * alpha);
+	_rHorWidth = _rWidth / cosW;
+
     _pPtsProfile[5] = AcGePoint2d( _rDiameter / 2.0f - _rHorWidth, _rHeight);
     _pPtsProfile[6] = AcGePoint2d( _rDiameter / 8.0f - _rWidth, _rInnerStemHeight);
     _pPtsProfile[7] = AcGePoint2d( _rDiameter / 8.0f - _rWidth, _rHeight / 8.0f);
@@ -113,6 +143,18 @@ bool CADArxCup::Calc(void)
 
 	// Zum Testen und für die Bewertung
     // die berechneten Werte ausgeben:
+	acutPrintf(_T("\na.x : %8.6f"), a.x);
+	acutPrintf(_T(" a.y : %8.6f"), a.y);
+	acutPrintf(_T("\nb.x : %8.6f"), b.x);
+	acutPrintf(_T(" b.y : %8.6f"),  b.y);
+	acutPrintf(_T("\nangle                : %8.6f"), angle);
+	acutPrintf(_T("\ndot                  : %8.6f"), dot);
+	acutPrintf(_T("\ngegenkathete         : %8.6f"), gegenkathete);
+	acutPrintf(_T("\nalpha                : %8.6f"), alpha);
+	acutPrintf(_T("\ncosW                 : %8.6f"), cosW);
+	acutPrintf(_T("\n_rDiameter           : %8.6f"), _rDiameter);
+	acutPrintf(_T("\n_rWidth              : %8.6f"), _rWidth);
+	acutPrintf(_T("\n_rHeight             : %8.6f"), _rHeight);
 	acutPrintf(_T("\nHorizontal Width     : %8.6f"), _rHorWidth);
 	acutPrintf(_T("\nSphere Radius on Cup : %8.6f"), _rSphereRadiusOnCup);
 	acutPrintf(_T("\nInner Stem Height    : %8.6f"), _rInnerStemHeight);
@@ -132,5 +174,38 @@ void CADArxCup::Create(void)
     // Achten Sie darauf, dass für alle erzeugten Elemente (die Linien,
     // die Fläche, ...) die close-Methode aufgerufen wird.
 
+	// testweise anzeigen
+	for (size_t i = 0; i < 8; i++)
+	{
+		CreateLine(_pBlockTableRecord, _pPtsProfile[i], _pPtsProfile[i + 1]);
+	}
 }
 
+
+
+// stolen from gear
+void CADArxCup::CreateLine(AcDbBlockTableRecord* pBlockTableRecord,
+	const AcGePoint2d&    ptStart,
+	const AcGePoint2d&    ptEnd)
+{
+	// Fügen Sie hier den Code zum Speichern einer Linie ein
+	// und zum Prüfen der Länge vor dem Speichern.
+
+	//TODO: check bogenlänge for large enough length
+
+	// check if line is long enough
+	AcGePoint3d start(ptStart.x , ptStart.y, 0);
+	AcGePoint3d end(ptEnd.x , ptEnd.y, 0);
+
+	AcDbLine* pEntity = new AcDbLine(start, end);
+
+	AcDbObjectId pOutputId; // to give as reference and thereafter ignore
+	Acad::ErrorStatus es = pBlockTableRecord->appendAcDbEntity(pOutputId, pEntity);
+
+	pEntity->close();
+
+	if (es != Acad::ErrorStatus::eOk)
+	{
+		throw(std::runtime_error("CADarxLetter:: an error occured, i can not continue!"));
+	}
+}

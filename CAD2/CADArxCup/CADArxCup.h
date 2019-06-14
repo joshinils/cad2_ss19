@@ -12,6 +12,16 @@
 #include <gepnt2d.h>
 class AcDb3dSolid;
 
+
+// zum testweise anzeigen
+#include <adsdef.h>
+#include <gepnt3d.h>
+class AcGePoint2d;
+class AcDbBlockTableRecord;
+
+#include <dbsymtb.h>
+
+
 class CADArxCup
 {
 public:
@@ -47,4 +57,13 @@ private:
     AcDb3dSolid* CreateSphere(double dPhi);
 
     static const ads_real _rPi;
+
+
+	// stolen from gear:
+	void CreateLine(AcDbBlockTableRecord* pBlockTableRecord,
+		const AcGePoint2d&    ptStart,
+		const AcGePoint2d&    ptEnd);
+
+	AcDbBlockTable* _pBlockTable;
+	AcDbBlockTableRecord* _pBlockTableRecord;
 };

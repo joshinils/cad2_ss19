@@ -51,7 +51,6 @@ CADArxGear::CADArxGear(void)
 
     acdbHostApplicationServices()->workingDatabase()->getSymbolTable(_pBlockTable, AcDb::kForRead);
     _pBlockTable->getAt(ACDB_MODEL_SPACE, _pBlockTableRecord, AcDb::kForWrite);
-
 }
 
 CADArxGear::~CADArxGear(void)
