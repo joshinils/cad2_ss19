@@ -174,13 +174,66 @@ void CADArxCup::Create(void)
     // Achten Sie darauf, dass für alle erzeugten Elemente (die Linien,
     // die Fläche, ...) die close-Methode aufgerufen wird.
 
-	// testweise anzeigen
-	for (size_t i = 0; i < 8; i++)
+	// testweise kontur anzeigen
+	//for (size_t i = 0; i < 8; i++)
+	//{
+	//	CreateLine(_pBlockTableRecord, _pPtsProfile[i], _pPtsProfile[i + 1]);
+	//}
+
+	AcDbVoidPtrArray lines(9);
+	for (size_t i = 0; i < 9; i++)
 	{
-		CreateLine(_pBlockTableRecord, _pPtsProfile[i], _pPtsProfile[i + 1]);
+		AcDbLine* currentLine = new AcDbLine(AcGePoint3d(_pPtsProfile[i    ].x, 0, _pPtsProfile[i    ].y),
+                                             AcGePoint3d(_pPtsProfile[i + 1].x, 0, _pPtsProfile[i + 1].y));
+
+		// visualize lines to revolve
+		if (false)
+		{
+			AcDbObjectId pOutputId; // to give as reference and thereafter ignore
+			Acad::ErrorStatus es = _pBlockTableRecord->appendAcDbEntity(pOutputId, currentLine);
+			if (es != Acad::ErrorStatus::eOk)
+			{
+				acutPrintf(_T("\n gotten to line: %i"), __LINE__);
+				return;
+			}
+			currentLine->close();
+
+			currentLine = new AcDbLine(AcGePoint3d(_pPtsProfile[i].x, 0, _pPtsProfile[i].y),
+				AcGePoint3d(_pPtsProfile[i + 1].x, 0, _pPtsProfile[i + 1].y));
+		}
+
+		lines.append(currentLine);
+	}
+
+	AcDbVoidPtrArray regions(1);
+	Acad::ErrorStatus es1 = AcDbRegion::createFromCurves(lines, regions);
+	if (es1 != Acad::ErrorStatus::eOk)
+	{
+		acutPrintf(_T("\n gotten to line: %i"), __LINE__);
+		return;
+	}
+	AcGeVector3d up(0,0,1);
+
+	AcDb3dSolid* pSolid = new AcDb3dSolid();
+	Acad::ErrorStatus es2 = pSolid->revolve((AcDbRegion*)regions[0], _ptRef, up, 2 * _rPi);
+
+	if (es2 != Acad::ErrorStatus::eOk)
+	{
+		acutPrintf(_T("\n gotten to line: %i"), __LINE__);
+		return;
+	}
+
+	{
+		AcDbObjectId pOutputId; // to give as reference and thereafter ignore
+		Acad::ErrorStatus es3 = _pBlockTableRecord->appendAcDbEntity(pOutputId, pSolid);
+		if (es3 != Acad::ErrorStatus::eOk)
+		{
+			acutPrintf(_T("\n gotten to line: %i"), __LINE__);
+			return;
+		}
+		pSolid->close();
 	}
 }
-
 
 
 // stolen from gear
