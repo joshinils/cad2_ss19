@@ -131,21 +131,6 @@ bool CADArxCup::Calc(void)
 	}
 
 
-	//TODO: calculate rSphereRadiusOnCup
-
-
-	if ( _rSphereRadiusOnCup < _rWidth + CADArx_Width_Eps )
-	{
-		acutPrintf(_T("\n_rSphereRadiusOnCup too small : %8.6f"), _rSphereRadiusOnCup);
-		return false;
-	}
-	if (_rHeight/8 - _rWidth < _rSphereRadiusOnCup)
-	{
-		acutPrintf(_T("\n_rSphereRadiusOnCup too big : %8.6f"), _rSphereRadiusOnCup);
-		return false;
-	}
-
-
     _pPtsProfile[0] = _pPtsProfile[9] = AcGePoint2d();
     _pPtsProfile[1] = AcGePoint2d( _rDiameter * 3.0f / 8.0f, 0.0f);
     _pPtsProfile[2] = AcGePoint2d( _rDiameter / 8.0f, _rHeight / 8.0f );
@@ -163,15 +148,37 @@ bool CADArxCup::Calc(void)
 	double tanAlpha = tan(alpha);
 	double gegenkathete = _rWidth / tanAlpha;
 
+
 	_rInnerStemHeight = _pPtsProfile[3].y + gegenkathete;
 
 	double cosW = cos(_rPi - 2 * alpha);
 	_rHorWidth = _rWidth / cosW;
 
+
+
     _pPtsProfile[5] = AcGePoint2d( _rDiameter / 2.0f - _rHorWidth, _rHeight);
     _pPtsProfile[6] = AcGePoint2d( _rDiameter / 8.0f - _rWidth, _rInnerStemHeight);
     _pPtsProfile[7] = AcGePoint2d( _rDiameter / 8.0f - _rWidth, _rHeight / 8.0f);
-    _pPtsProfile[8] = AcGePoint2d( 0, _rHeight / 8.0f);
+    _pPtsProfile[8] = AcGePoint2d( 0.0f, _rHeight / 8.0f);
+
+	//TODO: calculate rSphereRadiusOnCup
+	double andererWinkel = _rPi - angle;
+	double ankathete = abs(_rHeight -_rInnerStemHeight -_rHeight/8.0f);
+	_rSphereRadiusOnCup = tan(andererWinkel) * ankathete  +  _rDiameter/8.0f - _rHorWidth/2.0f;
+	if (false)
+	{
+		if (_rSphereRadiusOnCup < _rWidth + CADArx_Width_Eps)
+		{
+			acutPrintf(_T("\n_rSphereRadiusOnCup too small : %8.6f"), _rSphereRadiusOnCup);
+			return false;
+		}
+		if (_rHeight / 8 - _rWidth < _rSphereRadiusOnCup)
+		{
+			acutPrintf(_T("\n_rSphereRadiusOnCup too big : %8.6f"), _rSphereRadiusOnCup);
+			return false;
+		}
+
+	}
 
 	// Zum Testen und für die Bewertung
     // die berechneten Werte ausgeben:
@@ -182,6 +189,7 @@ bool CADArxCup::Calc(void)
 	acutPrintf(_T("\nangle                : %8.6f"), angle);
 	acutPrintf(_T("\ndot                  : %8.6f"), dot);
 	acutPrintf(_T("\ngegenkathete         : %8.6f"), gegenkathete);
+	acutPrintf(_T("\nankathete            : %8.6f"), ankathete);
 	acutPrintf(_T("\nalpha                : %8.6f"), alpha);
 	acutPrintf(_T("\ncosW                 : %8.6f"), cosW);
 	acutPrintf(_T("\n_rDiameter           : %8.6f"), _rDiameter);
@@ -198,8 +206,14 @@ bool CADArxCup::Calc(void)
 AcDb3dSolid* CADArxCup::CreateSphere(double dPhi)
 {
     // Fügen Sie hier den Code zum Erzeugen einer Kugel ein.
-
-    return NULL;
+	AcDb3dSolid* sp = new AcDb3dSolid();
+	if (sp->createSphere(dPhi) != Acad::ErrorStatus::eOk)
+	{
+		acutPrintf(_T("\n gotten to line: %i"), __LINE__);
+		delete[] sp;
+		return NULL;
+	}
+    return sp;
 }
 
 void CADArxCup::Create(void)
@@ -217,24 +231,24 @@ void CADArxCup::Create(void)
 	AcDbVoidPtrArray lines(9);
 	for (size_t i = 0; i < 9; i++)
 	{
-		AcDbLine* currentLine = new AcDbLine(AcGePoint3d(_pPtsProfile[i    ].x, 0, _pPtsProfile[i    ].y),
-                                             AcGePoint3d(_pPtsProfile[i + 1].x, 0, _pPtsProfile[i + 1].y));
+		AcDbLine* currentLine = new AcDbLine(AcGePoint3d(_pPtsProfile[i    ].x + _ptRef.x, _ptRef.y, _pPtsProfile[i    ].y + _ptRef.z),
+                                             AcGePoint3d(_pPtsProfile[i + 1].x + _ptRef.x, _ptRef.y, _pPtsProfile[i + 1].y + _ptRef.z));
 
-		// visualize lines to revolve
-		if (false)
-		{
-			AcDbObjectId pOutputId; // to give as reference and thereafter ignore
-			Acad::ErrorStatus es = _pBlockTableRecord->appendAcDbEntity(pOutputId, currentLine);
-			if (es != Acad::ErrorStatus::eOk)
-			{
-				acutPrintf(_T("\n gotten to line: %i"), __LINE__);
-				return;
-			}
-			currentLine->close();
-
-			currentLine = new AcDbLine(AcGePoint3d(_pPtsProfile[i].x, 0, _pPtsProfile[i].y),
-				AcGePoint3d(_pPtsProfile[i + 1].x, 0, _pPtsProfile[i + 1].y));
-		}
+		//// visualize lines to revolve
+		//if (false)
+		//{
+		//	AcDbObjectId pOutputId; // to give as reference and thereafter ignore
+		//	Acad::ErrorStatus es = _pBlockTableRecord->appendAcDbEntity(pOutputId, currentLine);
+		//	if (es != Acad::ErrorStatus::eOk)
+		//	{
+		//		acutPrintf(_T("\n gotten to line: %i"), __LINE__);
+		//		return;
+		//	}
+		//	currentLine->close();
+		//
+		//	currentLine = new AcDbLine(AcGePoint3d(_pPtsProfile[i].x, 0, _pPtsProfile[i].y),
+		//		AcGePoint3d(_pPtsProfile[i + 1].x, 0, _pPtsProfile[i + 1].y));
+		//}
 
 		lines.append(currentLine);
 	}
@@ -248,8 +262,8 @@ void CADArxCup::Create(void)
 	}
 	AcGeVector3d up(0,0,1);
 
-	AcDb3dSolid* pSolid = new AcDb3dSolid();
-	Acad::ErrorStatus es2 = pSolid->revolve((AcDbRegion*)regions[0], _ptRef, up, 2 * _rPi);
+	AcDb3dSolid* cup = new AcDb3dSolid();
+	Acad::ErrorStatus es2 = cup->revolve((AcDbRegion*)regions[0], _ptRef, up, 2 * _rPi);
 
 	if (es2 != Acad::ErrorStatus::eOk)
 	{
@@ -259,14 +273,33 @@ void CADArxCup::Create(void)
 
 	{
 		AcDbObjectId pOutputId; // to give as reference and thereafter ignore
-		Acad::ErrorStatus es3 = _pBlockTableRecord->appendAcDbEntity(pOutputId, pSolid);
+		Acad::ErrorStatus es3 = _pBlockTableRecord->appendAcDbEntity(pOutputId, cup);
 		if (es3 != Acad::ErrorStatus::eOk)
 		{
 			acutPrintf(_T("\n gotten to line: %i"), __LINE__);
 			return;
 		}
-		pSolid->close();
 	}
+
+	// create sphere(s)
+	for (size_t i = 0; i < _nSphereNumber; i++)
+	{
+		double angle = i * 2 * _rPi / _nSphereNumber;
+		double x = cos(angle)*_rSphereRadiusOnCup;
+		double y = sin(angle)*_rSphereRadiusOnCup;
+		AcDb3dSolid* sphere = CreateSphere(_rRadiusSphere);
+		AcGeVector3d ort = AcGeVector3d(_ptRef.x + x, _ptRef.y + y,_rHeight*7/8 + _ptRef.z);
+		AcGeMatrix3d mat(ort);
+		sphere->transformBy(mat);
+
+		auto es4 = cup->booleanOper(AcDb::kBoolUnite, sphere);
+		if (es4 != Acad::ErrorStatus::eOk)
+		{
+			acutPrintf(_T("\n gotten to line: %i"), __LINE__);
+			return;
+		}
+	}
+	cup->close();
 }
 
 
