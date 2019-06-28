@@ -114,6 +114,38 @@ bool CADArxCup::Calc(void)
     // Zwischenergebnisse: _rHorWidth, _rSphereRadiusOnCup (siehe CADArxCup.h)
     // AcGePoint2d-Feld für das Profil: _pPtsProfile[10] (siehe CADArxCup.h)
 
+	if (_rWidth < CADArx_Width_Eps)
+	{
+		acutPrintf(_T("\n_rWidth too small : %8.6f"), _rWidth);
+		return false;
+	}
+	if (_rHeight < 16 * _rWidth)
+	{
+		acutPrintf(_T("\n_rHeight too small : %8.6f"), _rHeight);
+		return false;
+	}
+	if (_rDiameter < 16 * _rWidth)
+	{
+		acutPrintf(_T("\n_rDiameter too small : %8.6f"), _rDiameter);
+		return false;
+	}
+
+
+	//TODO: calculate rSphereRadiusOnCup
+
+
+	if ( _rSphereRadiusOnCup < _rWidth + CADArx_Width_Eps )
+	{
+		acutPrintf(_T("\n_rSphereRadiusOnCup too small : %8.6f"), _rSphereRadiusOnCup);
+		return false;
+	}
+	if (_rHeight/8 - _rWidth < _rSphereRadiusOnCup)
+	{
+		acutPrintf(_T("\n_rSphereRadiusOnCup too big : %8.6f"), _rSphereRadiusOnCup);
+		return false;
+	}
+
+
     _pPtsProfile[0] = _pPtsProfile[9] = AcGePoint2d();
     _pPtsProfile[1] = AcGePoint2d( _rDiameter * 3.0f / 8.0f, 0.0f);
     _pPtsProfile[2] = AcGePoint2d( _rDiameter / 8.0f, _rHeight / 8.0f );
@@ -158,6 +190,8 @@ bool CADArxCup::Calc(void)
 	acutPrintf(_T("\nHorizontal Width     : %8.6f"), _rHorWidth);
 	acutPrintf(_T("\nSphere Radius on Cup : %8.6f"), _rSphereRadiusOnCup);
 	acutPrintf(_T("\nInner Stem Height    : %8.6f"), _rInnerStemHeight);
+
+
     return true;
 }
 
